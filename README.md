@@ -18,8 +18,8 @@ A Minecraft Fabric mod that adds the **Orbital Wolf Rod**. Using the rod summons
 
 ## Requirements
 
-- Java 21
-- Minecraft 1.21.11
+- Java 25
+- Minecraft 26.1.2
 - Fabric Loader + Fabric API
 
 ## Quick Start
@@ -144,4 +144,3 @@ Run tests:
   - `util/` - math utilities
 - `src/main/resources/assets/orbital_wolf_cannon/` - lang + model
 - `src/main/resources/data/orbital_wolf_cannon/` - recipes and advancements
-
