@@ -2,12 +2,10 @@ package com.slimeeystudios.orbitalwolfcannon.recipe;
 
 import com.slimeeystudios.orbitalwolfcannon.OrbitalWolfCannonMod;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.recipe.RecipeEntry;
-import net.minecraft.recipe.Recipe;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.crafting.RecipeHolder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,27 +18,25 @@ public final class RecipeBookUnlocker {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> unlockOrbitalRecipe(handler.player));
     }
 
-    private static void unlockOrbitalRecipe(ServerPlayerEntity player) {
-        ServerWorld world = (ServerWorld) player.getEntityWorld();
-        Identifier recipeId = Identifier.of(OrbitalWolfCannonMod.MOD_ID, "orbital_wolf_rod");
-        RegistryKey<Recipe<?>> recipeKey = RegistryKey.of(net.minecraft.registry.RegistryKeys.RECIPE, recipeId);
-        List<RecipeEntry<?>> recipesToUnlock = new ArrayList<>();
+    private static void unlockOrbitalRecipe(ServerPlayer player) {
+        ServerLevel world = player.serverLevel();
+        ResourceLocation recipeId = new ResourceLocation(OrbitalWolfCannonMod.MOD_ID, "orbital_wolf_rod");
+        List<RecipeHolder<?>> recipesToUnlock = new ArrayList<>();
 
-        world.getRecipeManager().get(recipeKey).ifPresent(recipesToUnlock::add);
+        world.getRecipeManager().byKey(recipeId).ifPresent(recipesToUnlock::add);
 
         if (recipesToUnlock.isEmpty()) {
-            for (RecipeEntry<?> entry : world.getRecipeManager().values()) {
-                if (entry.id().getValue().getNamespace().equals(OrbitalWolfCannonMod.MOD_ID)) {
+            for (RecipeHolder<?> entry : world.getRecipeManager().getRecipes()) {
+                if (entry.id().getNamespace().equals(OrbitalWolfCannonMod.MOD_ID)) {
                     recipesToUnlock.add(entry);
                 }
             }
         }
 
         if (!recipesToUnlock.isEmpty()) {
-            player.unlockRecipes(recipesToUnlock);
+            player.awardRecipes(recipesToUnlock);
         } else {
             OrbitalWolfCannonMod.LOGGER.warn("Orbital Wolf Rod recipe {} was not present in recipe manager; recipe book unlock skipped.", recipeId);
         }
     }
 }
-
