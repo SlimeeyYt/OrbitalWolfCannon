@@ -13,12 +13,12 @@ import net.minecraft.world.level.Level;
 
 public class OrbitalWolfRodItem extends Item {
 
-    public OrbitalWolfRodItem(Settings settings) {
-        super(settings);
+    public OrbitalWolfRodItem(Item.Properties properties) {
+        super(properties);
     }
 
     @Override
-    public boolean hasGlint(ItemStack stack) {
+    public boolean isFoil(ItemStack stack) {
         return true;
     }
 
