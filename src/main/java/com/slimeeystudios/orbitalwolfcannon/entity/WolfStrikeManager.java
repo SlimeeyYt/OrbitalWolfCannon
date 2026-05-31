@@ -73,7 +73,7 @@ public final class WolfStrikeManager {
     private static void summonSingleWolf(ServerLevel world, ServerPlayer owner, double x, double y, double z, int wolfIndex) {
         Wolf wolf = EntityType.WOLF.spawn(
                 world,
-                null,
+                ItemStack.EMPTY,
                 owner,
                 BlockPos.containing(x, y, z),
                 MobSpawnType.EVENT,
