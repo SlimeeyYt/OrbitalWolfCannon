@@ -5,6 +5,7 @@ import com.slimeeystudios.orbitalwolfcannon.config.OrbitalWolfCannonConfig;
 import com.slimeeystudios.orbitalwolfcannon.util.CirclePositionUtil;
 import com.slimeeystudios.orbitalwolfcannon.util.WolfDyeColorUtil;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -17,6 +18,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.animal.Wolf;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.item.ItemStack;
@@ -69,7 +71,15 @@ public final class WolfStrikeManager {
     }
 
     private static void summonSingleWolf(ServerLevel world, ServerPlayer owner, double x, double y, double z, int wolfIndex) {
-        Wolf wolf = EntityType.WOLF.create(world);
+        Wolf wolf = EntityType.WOLF.spawn(
+                world,
+                null,
+                owner,
+                BlockPos.containing(x, y, z),
+                MobSpawnType.EVENT,
+                true,
+                false
+        );
         if (wolf == null) {
             OrbitalWolfCannonMod.LOGGER.warn("Failed to create wolf entity during Orbital Wolf Rod activation.");
             return;
@@ -81,15 +91,7 @@ public final class WolfStrikeManager {
         
         // Set wolf collar color based on index (cycles through 16 dye colors)
         net.minecraft.world.item.DyeColor collarColor = WolfDyeColorUtil.getColorForWolf(wolfIndex);
-        try {
-            // Attempt to set collar color via reflection if direct method not available
-            java.lang.reflect.Method method = Wolf.class.getDeclaredMethod("setCollarColor", net.minecraft.world.item.DyeColor.class);
-            method.setAccessible(true);
-            method.invoke(wolf, collarColor);
-        } catch (Exception e) {
-            // Fallback: just log if method doesn't exist, don't crash
-            OrbitalWolfCannonMod.LOGGER.debug("Could not set wolf collar color: {}", e.getMessage());
-        }
+        wolf.setCollarColor(collarColor);
         
         wolf.setItemSlot(EquipmentSlot.BODY, new ItemStack(Items.WOLF_ARMOR));
         wolf.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, OrbitalWolfCannonConfig.strengthDurationTicks, OrbitalWolfCannonConfig.strengthAmplifier));
