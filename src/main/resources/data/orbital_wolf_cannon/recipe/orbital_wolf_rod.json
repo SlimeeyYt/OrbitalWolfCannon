@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "orbital_wolf_cannon",
+  "ingredients": [
+    "minecraft:nether_star"
+  ],
+  "result": {
+    "id": "orbital_wolf_cannon:orbital_wolf_rod",
+    "count": 1
+  }
+}
+

@@ -1,0 +1,54 @@
+plugins {
+    id("java-library")
+    id("net.neoforged.moddev") version "2.0.141"
+}
+
+tasks.named("wrapper", Wrapper).configure {
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+version = project.mod_version
+group = "com.slimeeystudios"
+
+base {
+    archivesName = project.mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+
+neoForge {
+    version = project.neo_version
+
+    runs {
+        client {
+            client()
+            systemProperty("neoforge.enabledGameTestNamespaces", project.mod_id)
+        }
+        server {
+            server()
+            systemProperty("neoforge.enabledGameTestNamespaces", project.mod_id)
+            programArgument("--nogui")
+        }
+    }
+
+    mods {
+        "${project.mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+dependencies {
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
+}
+
+tasks.named("downloadAssets").configure {
+    javaExecutable = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(25)
+    }.get().executablePath.asFile.absolutePath
+}
