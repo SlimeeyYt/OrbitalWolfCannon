@@ -1,7 +1,7 @@
 package com.slimeeystudios.orbitalwolfcannon.util;
 
-import net.minecraft.item.Items;
-import net.minecraft.util.DyeColor;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.DyeColor;
 
 /**
  * Utility class for managing wolf dye colors.
@@ -46,7 +46,7 @@ public class WolfDyeColorUtil {
      * @param color The dye color
      * @return The corresponding dye item
      */
-    public static net.minecraft.item.Item getDyeItem(DyeColor color) {
+    public static net.minecraft.world.item.Item getDyeItem(DyeColor color) {
         return switch (color) {
             case WHITE -> Items.WHITE_DYE;
             case ORANGE -> Items.ORANGE_DYE;

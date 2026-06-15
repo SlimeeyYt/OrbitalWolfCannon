@@ -5,24 +5,25 @@ import com.slimeeystudios.orbitalwolfcannon.config.OrbitalWolfCannonConfig;
 import com.slimeeystudios.orbitalwolfcannon.util.CirclePositionUtil;
 import com.slimeeystudios.orbitalwolfcannon.util.WolfDyeColorUtil;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.mob.HostileEntity;
-import net.minecraft.entity.passive.WolfEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.particle.ParticleTypes;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.Box;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.animal.wolf.Wolf;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.AABB;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -41,8 +42,8 @@ public final class WolfStrikeManager {
         ServerTickEvents.END_SERVER_TICK.register(WolfStrikeManager::onServerTick);
     }
 
-    public static void executeStrike(ServerPlayerEntity player) {
-        ServerWorld world = (ServerWorld) player.getEntityWorld();
+    public static void executeStrike(ServerPlayer player) {
+        ServerLevel world = (ServerLevel) player.level();
 
         spawnActivationRing(world, player);
         world.playSound(
@@ -50,8 +51,8 @@ public final class WolfStrikeManager {
                 player.getX(),
                 player.getY(),
                 player.getZ(),
-                SoundEvents.ENTITY_ENDER_DRAGON_GROWL,
-                SoundCategory.PLAYERS,
+                SoundEvents.ENDER_DRAGON_GROWL,
+                SoundSource.PLAYERS,
                 OrbitalWolfCannonConfig.summonSoundVolume,
                 OrbitalWolfCannonConfig.summonSoundPitch
         );
@@ -69,56 +70,53 @@ public final class WolfStrikeManager {
         }
     }
 
-    private static void summonSingleWolf(ServerWorld world, ServerPlayerEntity owner, double x, double y, double z, int wolfIndex) {
-        WolfEntity wolf = EntityType.WOLF.create(world, SpawnReason.EVENT);
+    private static void summonSingleWolf(ServerLevel world, ServerPlayer owner, double x, double y, double z, int wolfIndex) {
+        Wolf wolf = EntityType.WOLF.create(world, EntitySpawnReason.EVENT);
         if (wolf == null) {
             OrbitalWolfCannonMod.LOGGER.warn("Failed to create wolf entity during Orbital Wolf Rod activation.");
             return;
         }
 
-        wolf.refreshPositionAndAngles(x, y, z, owner.getYaw(), 0.0F);
+        wolf.snapTo(x, y, z, owner.getYRot(), 0.0F);
         wolf.setOwner(owner);
-        wolf.setTamed(true, true);
-        wolf.setSitting(false);
+        wolf.setTame(true, true);
+        wolf.setOrderedToSit(false);
         
-        // Set wolf collar color based on index (cycles through 16 dye colors)
-        net.minecraft.util.DyeColor collarColor = WolfDyeColorUtil.getColorForWolf(wolfIndex);
+        DyeColor collarColor = WolfDyeColorUtil.getColorForWolf(wolfIndex);
         try {
-            // Attempt to set collar color via reflection if direct method not available
-            java.lang.reflect.Method method = WolfEntity.class.getDeclaredMethod("setCollarColor", net.minecraft.util.DyeColor.class);
+            java.lang.reflect.Method method = Wolf.class.getDeclaredMethod("setCollarColor", net.minecraft.world.item.DyeColor.class);
             method.setAccessible(true);
             method.invoke(wolf, collarColor);
         } catch (Exception e) {
-            // Fallback: just log if method doesn't exist, don't crash
             OrbitalWolfCannonMod.LOGGER.debug("Could not set wolf collar color: {}", e.getMessage());
         }
         
-        wolf.equipStack(EquipmentSlot.BODY, new ItemStack(Items.WOLF_ARMOR));
-        wolf.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, OrbitalWolfCannonConfig.strengthDurationTicks, OrbitalWolfCannonConfig.strengthAmplifier));
+        wolf.setItemSlot(EquipmentSlot.BODY, new ItemStack(Items.WOLF_ARMOR));
+        wolf.addEffect(new MobEffectInstance(MobEffects.STRENGTH, OrbitalWolfCannonConfig.strengthDurationTicks, OrbitalWolfCannonConfig.strengthAmplifier));
 
-        world.spawnEntity(wolf);
+        world.addFreshEntity(wolf);
         retargetToNearbyHostile(wolf);
 
-        world.spawnParticles(ParticleTypes.EXPLOSION, x, y + 0.2D, z, 2, 0.15D, 0.05D, 0.15D, 0.01D);
-        world.spawnParticles(ParticleTypes.CLOUD, x, y + 0.1D, z, 5, 0.2D, 0.06D, 0.2D, 0.01D);
+        world.sendParticles(ParticleTypes.EXPLOSION, x, y + 0.2D, z, 2, 0.15D, 0.05D, 0.15D, 0.01D);
+        world.sendParticles(ParticleTypes.CLOUD, x, y + 0.1D, z, 5, 0.2D, 0.06D, 0.2D, 0.01D);
 
         if (OrbitalWolfCannonConfig.autoDespawnEnabled) {
-            TRACKED_WOLVES.put(wolf.getUuid(), world.getTime() + OrbitalWolfCannonConfig.wolfDespawnTicks);
+            TRACKED_WOLVES.put(wolf.getUUID(), world.getGameTime() + OrbitalWolfCannonConfig.wolfDespawnTicks);
         }
     }
 
-    private static void spawnActivationRing(ServerWorld world, ServerPlayerEntity player) {
+    private static void spawnActivationRing(ServerLevel world, ServerPlayer player) {
         List<double[]> ring = CirclePositionUtil.evenlyDistributedXZ(player.getX(), player.getZ(), OrbitalWolfCannonConfig.circleRadius, 72);
         double y = player.getY() + 0.05D;
 
         for (double[] position : ring) {
-            world.spawnParticles(ParticleTypes.CLOUD, position[0], y, position[1], 1, 0.0D, 0.0D, 0.0D, 0.0D);
+            world.sendParticles(ParticleTypes.CLOUD, position[0], y, position[1], 1, 0.0D, 0.0D, 0.0D, 0.0D);
         }
     }
 
-    private static void retargetToNearbyHostile(WolfEntity wolf) {
-        Box scanBox = wolf.getBoundingBox().expand(16.0D);
-        List<HostileEntity> hostiles = wolf.getEntityWorld().getEntitiesByClass(HostileEntity.class, scanBox, LivingEntity::isAlive);
+    private static void retargetToNearbyHostile(Wolf wolf) {
+        AABB scanBox = wolf.getBoundingBox().inflate(16.0D);
+        List<Monster> hostiles = wolf.level().getEntitiesOfClass(Monster.class, scanBox, LivingEntity::isAlive);
         if (!hostiles.isEmpty()) {
             wolf.setTarget(hostiles.get(0));
         }
@@ -129,20 +127,20 @@ public final class WolfStrikeManager {
             return;
         }
 
-        for (ServerWorld world : server.getWorlds()) {
+        for (ServerLevel world : server.getAllLevels()) {
             cleanupAndRetarget(world);
         }
     }
 
-    private static void cleanupAndRetarget(ServerWorld world) {
-        long worldTime = world.getTime();
+    private static void cleanupAndRetarget(ServerLevel world) {
+        long worldTime = world.getGameTime();
         Iterator<Map.Entry<UUID, Long>> iterator = TRACKED_WOLVES.entrySet().iterator();
 
         while (iterator.hasNext()) {
             Map.Entry<UUID, Long> entry = iterator.next();
             Entity entity = world.getEntity(entry.getKey());
 
-            if (!(entity instanceof WolfEntity wolf) || !wolf.isAlive()) {
+            if (!(entity instanceof Wolf wolf) || !wolf.isAlive()) {
                 iterator.remove();
                 continue;
             }
@@ -154,8 +152,8 @@ public final class WolfStrikeManager {
             }
 
             // Keep wolves standing (prevent sitting)
-            if (wolf.isSitting()) {
-                wolf.setSitting(false);
+            if (wolf.isOrderedToSit()) {
+                wolf.setOrderedToSit(false);
             }
 
             if (worldTime % 20L == 0L && (wolf.getTarget() == null || !wolf.getTarget().isAlive())) {

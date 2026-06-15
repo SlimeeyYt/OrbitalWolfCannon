@@ -5,8 +5,6 @@ import com.slimeeystudios.orbitalwolfcannon.entity.WolfStrikeManager;
 import com.slimeeystudios.orbitalwolfcannon.recipe.RecipeBookUnlocker;
 import com.slimeeystudios.orbitalwolfcannon.registry.ModItems;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
-import net.minecraft.item.ItemGroups;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,8 +16,6 @@ public class OrbitalWolfCannonMod implements ModInitializer {
     public void onInitialize() {
         OrbitalWolfCannonConfig.load();
         ModItems.register();
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(ModItems.ORBITAL_WOLF_ROD));
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.SEARCH).register(entries -> entries.add(ModItems.ORBITAL_WOLF_ROD));
         RecipeBookUnlocker.register();
         WolfStrikeManager.registerTickHandler();
         LOGGER.info("Orbital Wolf Cannon initialized");
