@@ -16,6 +16,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.wolf.Wolf;
@@ -71,7 +72,7 @@ public final class WolfStrikeManager {
     }
 
     private static void summonSingleWolf(ServerLevel world, ServerPlayer owner, double x, double y, double z, int wolfIndex) {
-        Wolf wolf = EntityType.WOLF.create(world, EntitySpawnReason.EVENT);
+        Wolf wolf = EntityTypes.WOLF.create(world, EntitySpawnReason.EVENT);
         if (wolf == null) {
             OrbitalWolfCannonMod.LOGGER.warn("Failed to create wolf entity during Orbital Wolf Rod activation.");
             return;
