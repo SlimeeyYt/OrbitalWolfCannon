@@ -1,7 +1,8 @@
 package com.slimeeystudios.orbitalwolfcannon.recipe;
 
 import com.slimeeystudios.orbitalwolfcannon.OrbitalWolfCannonMod;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -18,7 +19,13 @@ public final class RecipeBookUnlocker {
     }
 
     public static void register() {
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> unlockOrbitalRecipe(handler.getPlayer()));
+        NeoForge.EVENT_BUS.addListener(RecipeBookUnlocker::onPlayerJoin);
+    }
+
+    private static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            unlockOrbitalRecipe(player);
+        }
     }
 
     private static void unlockOrbitalRecipe(ServerPlayer player) {

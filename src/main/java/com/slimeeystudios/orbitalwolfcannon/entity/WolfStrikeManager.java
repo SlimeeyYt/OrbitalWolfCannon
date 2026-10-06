@@ -4,7 +4,8 @@ import com.slimeeystudios.orbitalwolfcannon.OrbitalWolfCannonMod;
 import com.slimeeystudios.orbitalwolfcannon.config.OrbitalWolfCannonConfig;
 import com.slimeeystudios.orbitalwolfcannon.util.CirclePositionUtil;
 import com.slimeeystudios.orbitalwolfcannon.util.WolfDyeColorUtil;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -40,7 +41,7 @@ public final class WolfStrikeManager {
     }
 
     public static void registerTickHandler() {
-        ServerTickEvents.END_SERVER_TICK.register(WolfStrikeManager::onServerTick);
+        NeoForge.EVENT_BUS.addListener(WolfStrikeManager::onServerTick);
     }
 
     public static void executeStrike(ServerPlayer player) {
@@ -123,12 +124,12 @@ public final class WolfStrikeManager {
         }
     }
 
-    private static void onServerTick(MinecraftServer server) {
+    private static void onServerTick(ServerTickEvent.Post event) {
         if (TRACKED_WOLVES.isEmpty()) {
             return;
         }
 
-        for (ServerLevel world : server.getAllLevels()) {
+        for (ServerLevel world : event.getServer().getAllLevels()) {
             cleanupAndRetarget(world);
         }
     }
